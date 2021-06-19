@@ -2266,7 +2266,7 @@ __attribute__((objc_nonlazy_class))
     }
     return NO;
 }
-
+//判断该实例对象是否是该类 或者父类的实例对象
 - (BOOL)isKindOfClass:(Class)cls {
     for (Class tcls = [self class]; tcls; tcls = tcls->getSuperclass()) {
         if (tcls == cls) return YES;

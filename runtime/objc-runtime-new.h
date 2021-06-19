@@ -458,7 +458,7 @@ public:
     const preopt_cache_t *preopt_cache() const;
 #endif
 
-    mask_t occupied() const;
+    mask_t occupied() const; //已经占位数量
     void initializeToEmpty();
 
 #if CONFIG_USE_PREOPT_CACHES

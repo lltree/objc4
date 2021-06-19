@@ -823,6 +823,7 @@ void cache_t::bad_cache(id receiver, SEL sel)
          "invalid object, or a memory error somewhere else.");
 }
 
+#pragma mark - cache_t往_buckets 中插入缓存方法
 void cache_t::insert(SEL sel, IMP imp, id receiver)
 {
     runtimeLock.assertLocked();
@@ -849,12 +850,12 @@ void cache_t::insert(SEL sel, IMP imp, id receiver)
     // Use the cache as-is if until we exceed our expected fill ratio.
     mask_t newOccupied = occupied() + 1;
     unsigned oldCapacity = capacity(), capacity = oldCapacity;
-    if (slowpath(isConstantEmptyCache())) {
+    if (slowpath(isConstantEmptyCache())) { //申请容量
         // Cache is read-only. Replace it.
         if (!capacity) capacity = INIT_CACHE_SIZE;
         reallocate(oldCapacity, capacity, /* freeOld */false);
     }
-    else if (fastpath(newOccupied + CACHE_END_MARKER <= cache_fill_ratio(capacity))) {
+    else if (fastpath(newOccupied + CACHE_END_MARKER <= cache_fill_ratio(capacity))) { //容量小于3/4 则不处理
         // Cache is less than 3/4 or 7/8 full. Use it as-is.
     }
 #if CACHE_ALLOW_FULL_UTILIZATION
@@ -863,11 +864,11 @@ void cache_t::insert(SEL sel, IMP imp, id receiver)
     }
 #endif
     else {
-        capacity = capacity ? capacity * 2 : INIT_CACHE_SIZE;
+        capacity = capacity ? capacity * 2 : INIT_CACHE_SIZE; //2倍 扩容
         if (capacity > MAX_CACHE_SIZE) {
             capacity = MAX_CACHE_SIZE;
         }
-        reallocate(oldCapacity, capacity, true);
+        reallocate(oldCapacity, capacity, true); //扩容时会清除掉已经存在的buckets
     }
 
     bucket_t *b = buckets();
@@ -878,17 +879,17 @@ void cache_t::insert(SEL sel, IMP imp, id receiver)
     // Scan for the first unused slot and insert there.
     // There is guaranteed to be an empty slot.
     do {
-        if (fastpath(b[i].sel() == 0)) {
+        if (fastpath(b[i].sel() == 0)) { //说明能存
             incrementOccupied();
             b[i].set<Atomic, Encoded>(b, sel, imp, cls());
             return;
         }
-        if (b[i].sel() == sel) {
+        if (b[i].sel() == sel) { //说明此位置有bucket_t并且要存的与 已经存在sel相同
             // The entry was added to the cache by some other thread
             // before we grabbed the cacheUpdateLock.
             return;
         }
-    } while (fastpath((i = cache_next(i, m)) != begin));
+    } while (fastpath((i = cache_next(i, m)) != begin));//查找下一个位置
 
     bad_cache(receiver, (SEL)sel);
 #endif // !DEBUG_TASK_THREADS
