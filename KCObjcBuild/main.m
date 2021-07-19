@@ -11,28 +11,40 @@
 
 // void _objc_autoreleasePoolPrint(void);
 #import <Foundation/Foundation.h>
+#import <objc/runtime.h>
 #import "LGPerson.h"
 #import "LGTeacher.h"
+#import "Base.h"
 
-void lgKindofDemo(void){
+//#import "objc-internal.h"
+
+void lgKindofDemo(void) {
     BOOL re1 = [(id)[NSObject class] isKindOfClass:[NSObject class]];       //
     BOOL re2 = [(id)[NSObject class] isMemberOfClass:[NSObject class]];     //
     BOOL re3 = [(id)[LGPerson class] isKindOfClass:[LGPerson class]];       //
     BOOL re4 = [(id)[LGPerson class] isMemberOfClass:[LGPerson class]];     //
-    NSLog(@" re1 :%hhd\n re2 :%hhd\n re3 :%hhd\n re4 :%hhd\n",re1,re2,re3,re4);
+    NSLog(@" re1 :%hhd\n re2 :%hhd\n re3 :%hhd\n re4 :%hhd\n", re1, re2, re3, re4);
 
     BOOL re5 = [(id)[NSObject alloc] isKindOfClass:[NSObject class]];       //
     BOOL re6 = [(id)[NSObject alloc] isMemberOfClass:[NSObject class]];     //
     BOOL re7 = [(id)[LGPerson alloc] isKindOfClass:[LGPerson class]];       //
     BOOL re8 = [(id)[LGPerson alloc] isMemberOfClass:[LGPerson class]];     //
-    NSLog(@" re5 :%hhd\n re6 :%hhd\n re7 :%hhd\n re8 :%hhd\n",re5,re6,re7,re8);
+    NSLog(@" re5 :%hhd\n re6 :%hhd\n re7 :%hhd\n re8 :%hhd\n", re5, re6, re7, re8);
 }
 
-int main(int argc, const char * argv[]) {
+//extern void _objc_autoreleasePoolPrint(void);
+int main(int argc, const char *argv[]) {
     @autoreleasepool {
         // class_data_bits_t
-        LGPerson *p = [[LGPerson alloc] init];
-        NSLog(@"%@",p);
+
+        [A twoSwizzleInstanceMethod:@selector(print:) withMethod:@selector(hookPrint:)];
+        [B twoSwizzleInstanceMethod:@selector(print:) withMethod:@selector(hookPrint:)];
+        //测试代码是这样的：
+        A *a = [A new]; [a print:@"hello1"];
+        Base *base = [Base new]; [base hookPrint:@"hookPrint"];
+        B *b = [B new]; [b print:@"hello2"];
+
+//         B* b = [B new]; [b print:@"hello2"];
     }
     return 0;
 }

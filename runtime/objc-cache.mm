@@ -243,7 +243,7 @@ static inline mask_t cache_next(mask_t i, mask_t mask) {
 }
 #elif __arm64__
 static inline mask_t cache_next(mask_t i, mask_t mask) {
-    return i ? i-1 : mask;
+    return i ? i-1 : mask; //__arm64__ 架构 前项查找
 }
 #else
 #error unexpected configuration
@@ -315,6 +315,7 @@ static inline mask_t cache_hash(SEL sel, mask_t mask)
 
 #if __arm64__
 
+//真正的存储
 template<Atomicity atomicity, IMPEncoding impEncoding>
 void bucket_t::set(bucket_t *base, SEL newSel, IMP newImp, Class cls)
 {
@@ -827,6 +828,16 @@ void cache_t::bad_cache(id receiver, SEL sel)
 void cache_t::insert(SEL sel, IMP imp, id receiver)
 {
     runtimeLock.assertLocked();
+    
+//    if (sel == @selector(saySomething)) {
+//        bucket_t *b = buckets();
+//        for (int i=0; i<capacity(); i++) {
+//            printf("%p-%p-%p\n",b[i].sel(),b[i].imp(b, nil),&b[i]);
+//        }
+//        printf("end");
+//    }
+    
+    
 
     // Never cache before +initialize is done
     if (slowpath(!cls()->isInitialized())) {
@@ -881,6 +892,7 @@ void cache_t::insert(SEL sel, IMP imp, id receiver)
     do {
         if (fastpath(b[i].sel() == 0)) { //说明能存
             incrementOccupied();
+            //调用set方法存储
             b[i].set<Atomic, Encoded>(b, sel, imp, cls());
             return;
         }

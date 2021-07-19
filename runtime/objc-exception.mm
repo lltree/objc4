@@ -496,6 +496,7 @@ objc_setExceptionMatcher(objc_exception_matcher fn)
 objc_uncaught_exception_handler 
 objc_setUncaughtExceptionHandler(objc_uncaught_exception_handler fn)
 {
+    //外界传入了一个函数，后异常就会被捕获到自己的函数中
     objc_uncaught_exception_handler result = uncaught_handler;
     uncaught_handler = fn;
     return result;
@@ -697,8 +698,8 @@ static void _objc_terminate(void)
             __cxa_rethrow();
         } @catch (id e) {
             // It's an objc object. Call Foundation's handler, if any.
-            (*uncaught_handler)((id)e);
-            (*old_terminate)();
+            (*uncaught_handler)((id)e);//objc对象 调用异常处理函数
+            (*old_terminate)();//
         } @catch (...) {
             // It's not an objc object. Continue to C++ terminate.
             (*old_terminate)();
@@ -1431,6 +1432,8 @@ static void call_alt_handlers(struct _Unwind_Context *ctx)
 **********************************************************************/
 void exception_init(void)
 {
+    //yihnexception
+    //设置了一个终端
     old_terminate = std::set_terminate(&_objc_terminate);
 }
 

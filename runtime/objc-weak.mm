@@ -111,14 +111,16 @@ static void grow_refs_and_insert(weak_entry_t *entry,
  */
 static void append_referrer(weak_entry_t *entry, objc_object **new_referrer)
 {
-    if (! entry->out_of_line()) {
+    if (! entry->out_of_line()) {//没有使用out_of_line 即 没有扩容过
         // Try to insert inline.
         for (size_t i = 0; i < WEAK_INLINE_COUNT; i++) {
-            if (entry->inline_referrers[i] == nil) {
-                entry->inline_referrers[i] = new_referrer;
+            if (entry->inline_referrers[i] == nil) { //没扩容按照顺序存进去
+                entry->inline_referrers[i] = new_referrer; //存进去后 直接返回
                 return;
             }
         }
+        
+        //需要扩容了，第一次扩容则发生在完全满了，刚好四个，先申请4 个内存，把原有的放进去
 
         // Couldn't insert inline. Allocate out of line.
         weak_referrer_t *new_referrers = (weak_referrer_t *)
@@ -130,16 +132,19 @@ static void append_referrer(weak_entry_t *entry, objc_object **new_referrer)
         }
         entry->referrers = new_referrers;
         entry->num_refs = WEAK_INLINE_COUNT;
-        entry->out_of_line_ness = REFERRERS_OUT_OF_LINE;
+        entry->out_of_line_ness = REFERRERS_OUT_OF_LINE;//设置扩容标识位
         entry->mask = WEAK_INLINE_COUNT-1;
         entry->max_hash_displacement = 0;
     }
 
     ASSERT(entry->out_of_line());
 
+    //需要扩容：扩容并且存储
     if (entry->num_refs >= TABLE_SIZE(entry) * 3/4) {
-        return grow_refs_and_insert(entry, new_referrer);
+        return grow_refs_and_insert(entry, new_referrer);//需要扩容性插入
     }
+    
+    //不需要扩容：存放到变成数组中，
     size_t begin = w_hash_pointer(new_referrer) & (entry->mask);
     size_t index = begin;
     size_t hash_displacement = 0;
@@ -216,13 +221,13 @@ static void weak_entry_insert(weak_table_t *weak_table, weak_entry_t *new_entry)
     size_t begin = hash_pointer(new_entry->referent) & (weak_table->mask);
     size_t index = begin;
     size_t hash_displacement = 0;
-    while (weak_entries[index].referent != nil) {
+    while (weak_entries[index].referent != nil) {//不为空则继续查找以下一个
         index = (index+1) & weak_table->mask;
-        if (index == begin) bad_weak_table(weak_entries);
+        if (index == begin) bad_weak_table(weak_entries);// 转了一圈又回来了 ，那就说明坏菜了
         hash_displacement++;
     }
 
-    weak_entries[index] = *new_entry;
+    weak_entries[index] = *new_entry; //为空 则保存
     weak_table->num_entries++;
 
     if (hash_displacement > weak_table->max_hash_displacement) {
@@ -235,9 +240,9 @@ static void weak_resize(weak_table_t *weak_table, size_t new_size)
 {
     size_t old_size = TABLE_SIZE(weak_table);
 
-    weak_entry_t *old_entries = weak_table->weak_entries;
+    weak_entry_t *old_entries = weak_table->weak_entries;//老的
     weak_entry_t *new_entries = (weak_entry_t *)
-        calloc(new_size, sizeof(weak_entry_t));
+        calloc(new_size, sizeof(weak_entry_t));//新的
 
     weak_table->mask = new_size - 1;
     weak_table->weak_entries = new_entries;
@@ -310,13 +315,18 @@ weak_entry_for_referent(weak_table_t *weak_table, objc_object *referent)
 {
     ASSERT(referent);
 
+    //只是为了从哈希数组weak_entries 中获取一个 weak_entry_t
+    //referent 是我们被weak的对象
+    //
+    //从哈希数组中找出
     weak_entry_t *weak_entries = weak_table->weak_entries;
 
     if (!weak_entries) return nil;
 
-    size_t begin = hash_pointer(referent) & weak_table->mask;
+    size_t begin = hash_pointer(referent) & weak_table->mask;//经过hash变换
     size_t index = begin;
     size_t hash_displacement = 0;
+    //hash 碰撞了
     while (weak_table->weak_entries[index].referent != referent) {
         index = (index+1) & weak_table->mask;
         if (index == begin) bad_weak_table(weak_table->weak_entries);
@@ -387,16 +397,26 @@ weak_unregister_no_lock(weak_table_t *weak_table, id referent_id,
  * @param referent The object pointed to by the weak reference.
  * @param referrer The weak pointer address.
  */
+
+/*
+ weak_table_t *weak_table
+ id referent_id: newObj 被引用的对象
+ id *referrer_id:weakObj指针的内存地址
+ 
+ */
 id 
 weak_register_no_lock(weak_table_t *weak_table, id referent_id, 
                       id *referrer_id, WeakRegisterDeallocatingOptions deallocatingOptions)
 {
-    objc_object *referent = (objc_object *)referent_id;
-    objc_object **referrer = (objc_object **)referrer_id;
+    objc_object *referent = (objc_object *)referent_id; //对象
+    objc_object **referrer = (objc_object **)referrer_id; // weak弱引用指针 地址
 
+    // 如果referent为nil 或 referent 采用了TaggedPointer计数方式，直接返回，不做任何操作
+    // 像一些简单的字符串 "fdf" 等
     if (referent->isTaggedPointerOrNil()) return referent_id;
 
     // ensure that the referenced object is viable
+    // 确保被引用的对象可用（没有在析构，同时应该支持weak引用）
     if (deallocatingOptions == ReturnNilIfDeallocating ||
         deallocatingOptions == CrashIfDeallocating) {
         bool deallocating;
@@ -417,7 +437,7 @@ weak_register_no_lock(weak_table_t *weak_table, id referent_id,
             ! (*allowsWeakReference)(referent, @selector(allowsWeakReference));
         }
 
-        if (deallocating) {
+        if (deallocating) { //被引用的对象正在释放
             if (deallocatingOptions == CrashIfDeallocating) {
                 _objc_fatal("Cannot form weak reference to instance (%p) of "
                             "class %s. It is possible that this object was "
@@ -430,14 +450,20 @@ weak_register_no_lock(weak_table_t *weak_table, id referent_id,
     }
 
     // now remember it and where it is being stored
+    // 在 weak_table中找到referent对应的weak_entry,并将referrer加入到weak_entry中
     weak_entry_t *entry;
+    //将referent_id对应的weak_entry_t从weak_table的weak_entry_t哈希数组中找出
+    //weak_table
+    //referent 原始对象地址 <LGPerson: 0x10130eb30>
     if ((entry = weak_entry_for_referent(weak_table, referent))) {
+        // 如果能找到weak_entry,则将referrer插入到weak_entry中
         append_referrer(entry, referrer);
     } 
     else {
+        //找不到则新建一个
         weak_entry_t new_entry(referent, referrer);
-        weak_grow_maybe(weak_table);
-        weak_entry_insert(weak_table, &new_entry);
+        weak_grow_maybe(weak_table);//可能需要扩容
+        weak_entry_insert(weak_table, &new_entry);//插入新的
     }
 
     // Do not set *referrer. objc_storeWeak() requires that the 
@@ -479,6 +505,7 @@ weak_clear_no_lock(weak_table_t *weak_table, id referent_id)
     weak_referrer_t *referrers;
     size_t count;
     
+    //获取到被引用个数
     if (entry->out_of_line()) {
         referrers = entry->referrers;
         count = TABLE_SIZE(entry);
@@ -491,8 +518,8 @@ weak_clear_no_lock(weak_table_t *weak_table, id referent_id)
     for (size_t i = 0; i < count; ++i) {
         objc_object **referrer = referrers[i];
         if (referrer) {
-            if (*referrer == referent) {
-                *referrer = nil;
+            if (*referrer == referent) {//weak指针 指向的对象地址是自己referent
+                *referrer = nil; //则把weak指针 设置为nil
             }
             else if (*referrer) {
                 _objc_inform("__weak variable at %p holds %p instead of %p. "
@@ -505,6 +532,7 @@ weak_clear_no_lock(weak_table_t *weak_table, id referent_id)
         }
     }
     
-    weak_entry_remove(weak_table, entry);
+    weak_entry_remove(weak_table, entry);//从weak表中删除 weak_entry
+    
 }
 

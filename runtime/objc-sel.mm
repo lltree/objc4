@@ -100,7 +100,7 @@ static SEL search_builtins(const char *name)
     return nil;
 }
 
-
+#pragma mark - 向NXHashTable中注入方法的
 static SEL __sel_registerName(const char *name, bool shouldLock, bool copy) 
 {
     SEL result = 0;
@@ -114,6 +114,7 @@ static SEL __sel_registerName(const char *name, bool shouldLock, bool copy)
     if (result) return result;
     
     conditional_mutex_locker_t lock(selLock, shouldLock);
+    //插入到namedSelectors这个哈希表中
 	auto it = namedSelectors.get().insert(name);
 	if (it.second) {
 		// No match. Insert.

@@ -663,7 +663,7 @@ IMP class_lookupMethod(Class cls, SEL sel)
 
     return class_getMethodImplementation(cls, sel);
 }
-
+#pragma mark - objc_msgSend() 获取IMP入口
 __attribute__((flatten))
 IMP class_getMethodImplementation(Class cls, SEL sel)
 {
@@ -677,7 +677,7 @@ IMP class_getMethodImplementation(Class cls, SEL sel)
 
     // Translate forwarding function to C-callable external version
     if (!imp) {
-        return _objc_msgForward;
+        return _objc_msgForward; //找不到就消息发送了
     }
 
     return imp;

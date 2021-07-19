@@ -78,18 +78,28 @@ typedef DisguisedPtr<objc_object *> weak_referrer_t;
 #define REFERRERS_OUT_OF_LINE 2
 
 struct weak_entry_t {
-    DisguisedPtr<objc_object> referent;
+    DisguisedPtr<objc_object> referent;//被引用的对象指针（经过包装处理）
     union {
         struct {
-            weak_referrer_t *referrers;
+            weak_referrer_t *referrers; //8字节 当inline_referrers不够存放数据的时候，使用该指针在堆上开辟空间存放数据
             uintptr_t        out_of_line_ness : 2;
-            uintptr_t        num_refs : PTR_MINUS_2;
-            uintptr_t        mask;
-            uintptr_t        max_hash_displacement;
+            uintptr_t        num_refs : PTR_MINUS_2;//8字节 默认62
+            uintptr_t        mask;//8字节
+            uintptr_t        max_hash_displacement;//8字节
         };
         struct {
+            // 就是结构体中放数组，默认32 字节 = 4 x 8字节 。结构体创建后就附带的，
+            // 如果不够存则 堆上开闭内存存放
             // out_of_line_ness field is low bits of inline_referrers[1]
-            weak_referrer_t  inline_referrers[WEAK_INLINE_COUNT];
+            /*
+             inline_referrers = {
+               [0] = (value = 18446744069375711296) //实际的weak弱引用地址
+               [1] = (value = 0)
+               [2] = (value = 0)
+               [3] = (value = 0)
+             }
+             */
+            weak_referrer_t  inline_referrers[WEAK_INLINE_COUNT];//32字节 也就是说能保存4个weak
         };
     };
 
@@ -117,8 +127,8 @@ struct weak_entry_t {
  * and weak_entry_t structs as their values.
  */
 struct weak_table_t {
-    weak_entry_t *weak_entries;
-    size_t    num_entries;
+    weak_entry_t *weak_entries; //哈希数组
+    size_t    num_entries;//记录entries数量
     uintptr_t mask;
     uintptr_t max_hash_displacement;
 };

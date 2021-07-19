@@ -47,8 +47,8 @@ spinlock_t AssociationsManagerLock;
 namespace objc {
 
 class ObjcAssociation {
-    uintptr_t _policy;
-    id _value;
+    uintptr_t _policy; //存储策略
+    id _value; //值
 public:
     ObjcAssociation(uintptr_t policy, id value) : _policy(policy), _value(value) {}
     ObjcAssociation() : _policy(0), _value(nil) {}
@@ -134,14 +134,16 @@ _objc_associations_init()
     AssociationsManager::init();
 }
 
+#pragma mark - get方法
 id
 _object_get_associative_reference(id object, const void *key)
 {
     ObjcAssociation association{};
 
     {
-        AssociationsManager manager;
-        AssociationsHashMap &associations(manager.get());
+        AssociationsManager manager;//AssociationsManager 全局管理manager
+        AssociationsHashMap &associations(manager.get());//从manager 中拿到 AssociationsHashMap
+        //从AssociationsHashMap中以object 为key拿到 ObjectAssociationMap
         AssociationsHashMap::iterator i = associations.find((objc_object *)object);
         if (i != associations.end()) {
             ObjectAssociationMap &refs = i->second;
@@ -156,6 +158,7 @@ _object_get_associative_reference(id object, const void *key)
     return association.autoreleaseReturnedValue();
 }
 
+#pragma mark - set方法
 void
 _object_set_associative_reference(id object, const void *key, id value, uintptr_t policy)
 {
@@ -168,6 +171,7 @@ _object_set_associative_reference(id object, const void *key, id value, uintptr_
         _objc_fatal("objc_setAssociatedObject called on instance (%p) of class %s which does not allow associated objects", object, object_getClassName(object));
 
     DisguisedPtr<objc_object> disguised{(objc_object *)object};
+    //值都转化为 ObjcAssociation
     ObjcAssociation association{policy, value};
 
     // retain the new value (if any) outside the lock.
@@ -219,6 +223,7 @@ _object_set_associative_reference(id object, const void *key, id value, uintptr_
     association.releaseHeldValue();
 }
 
+#pragma mark - remove
 // Unlike setting/getting an associated reference,
 // this function is performance sensitive because of
 // raw isa objects (such as OS Objects) that can't track

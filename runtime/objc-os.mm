@@ -918,7 +918,7 @@ void _objc_atfork_child()
 * Bootstrap initialization. Registers our image notifier with dyld.
 * Called by libSystem BEFORE library initialization time
 **********************************************************************/
-
+#pragma mark - objc初始化
 void _objc_init(void)
 {
     static bool initialized = false;
@@ -926,16 +926,21 @@ void _objc_init(void)
     initialized = true;
     
     // fixme defer initialization until an objc-using image is found?
-    environ_init();
-    tls_init();
-    static_init();
+    environ_init();//设置环境变量
+    tls_init();//线程局部缓存
+    static_init();//运行当前库中的constructor修饰函数
     runtime_init();
-    exception_init();
+    exception_init();//异常回调
 #if __OBJC2__
     cache_t::init();
 #endif
     _imp_implementationWithBlock_init();
 
+    //  map_images镜像文件
+    // map_images 管理文件中的和动态库中的所有符号 （类、协议、方法、分类）
+    //  map_images 什么时候调用
+    //load_images 执行+load方法
+    //  load_images 什么时候调用
     _dyld_objc_notify_register(&map_images, load_images, unmap_image);
 
 #if __OBJC2__

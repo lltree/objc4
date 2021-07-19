@@ -108,7 +108,7 @@
 #define __PTK_FRAMEWORK_GRAPHICS_KEY7	37
 #define __PTK_FRAMEWORK_GRAPHICS_KEY8	38
 #define __PTK_FRAMEWORK_GRAPHICS_KEY9	39
-
+/* 40-49为OC 运行时使用*/
 /* Keys 40-49 for Objective-C runtime usage */
 #define __PTK_FRAMEWORK_OBJC_KEY0	40
 #define __PTK_FRAMEWORK_OBJC_KEY1	41

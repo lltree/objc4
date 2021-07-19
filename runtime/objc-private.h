@@ -927,6 +927,7 @@ class StripedMap {
 
     PaddedT array[StripeCount];
 
+    //Hash函数 获取到相应的下标 然后获取一条syncList
     static unsigned int indexForPointer(const void *p) {
         uintptr_t addr = reinterpret_cast<uintptr_t>(p);
         return ((addr >> 4) ^ (addr >> 9)) % StripeCount;

@@ -152,6 +152,9 @@
 		C22F5208230EF38B001BFE14 /* objc-ptrauth.h in Headers */ = {isa = PBXBuildFile; fileRef = C22F5207230EF38B001BFE14 /* objc-ptrauth.h */; };
 		C2E6D3FC2225DCF00059DFAA /* DenseMapExtras.h in Headers */ = {isa = PBXBuildFile; fileRef = C2E6D3FB2225DCF00059DFAA /* DenseMapExtras.h */; };
 		C2EB731D23D8A38A0040672B /* dummy-library-mac-i386.c in Sources */ = {isa = PBXBuildFile; fileRef = C2EB731C23D8A38A0040672B /* dummy-library-mac-i386.c */; };
+		E699041C26A58103004BF475 /* NSObject+Swizzle.m in Sources */ = {isa = PBXBuildFile; fileRef = E699041B26A58103004BF475 /* NSObject+Swizzle.m */; };
+		E699042626A5817B004BF475 /* Base.m in Sources */ = {isa = PBXBuildFile; fileRef = E699042526A5817B004BF475 /* Base.m */; };
+		E6D204F6269AF01C00F7EE23 /* LGPerson+Cate1.m in Sources */ = {isa = PBXBuildFile; fileRef = E6D204F5269AF01C00F7EE23 /* LGPerson+Cate1.m */; };
 		E8923DA5116AB2820071B552 /* objc-block-trampolines.mm in Sources */ = {isa = PBXBuildFile; fileRef = E8923DA0116AB2820071B552 /* objc-block-trampolines.mm */; };
 		E934A9F123E996D00088F26F /* objc4.plist in CopyFiles */ = {isa = PBXBuildFile; fileRef = E934A9EF23E9967D0088F26F /* objc4.plist */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		F9BCC71B205C68E800DD9AFC /* objc-blocktramps-arm64.s in Sources */ = {isa = PBXBuildFile; fileRef = 8379996D13CBAF6F007C2B5F /* objc-blocktramps-arm64.s */; };
@@ -344,6 +347,12 @@
 		C2E6D3FB2225DCF00059DFAA /* DenseMapExtras.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DenseMapExtras.h; path = runtime/DenseMapExtras.h; sourceTree = "<group>"; };
 		C2EB731C23D8A38A0040672B /* dummy-library-mac-i386.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "dummy-library-mac-i386.c"; path = "runtime/dummy-library-mac-i386.c"; sourceTree = "<group>"; };
 		D2AAC0630554660B00DB518D /* libobjc.A.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libobjc.A.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		E699041A26A58103004BF475 /* NSObject+Swizzle.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSObject+Swizzle.h"; sourceTree = "<group>"; };
+		E699041B26A58103004BF475 /* NSObject+Swizzle.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "NSObject+Swizzle.m"; sourceTree = "<group>"; };
+		E699042426A5817B004BF475 /* Base.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Base.h; sourceTree = "<group>"; };
+		E699042526A5817B004BF475 /* Base.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Base.m; sourceTree = "<group>"; };
+		E6D204F4269AF01C00F7EE23 /* LGPerson+Cate1.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "LGPerson+Cate1.h"; sourceTree = "<group>"; };
+		E6D204F5269AF01C00F7EE23 /* LGPerson+Cate1.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "LGPerson+Cate1.m"; sourceTree = "<group>"; };
 		E8923D9C116AB2820071B552 /* objc-blocktramps-i386.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = "objc-blocktramps-i386.s"; path = "runtime/objc-blocktramps-i386.s"; sourceTree = "<group>"; };
 		E8923D9D116AB2820071B552 /* objc-blocktramps-x86_64.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = "objc-blocktramps-x86_64.s"; path = "runtime/objc-blocktramps-x86_64.s"; sourceTree = "<group>"; };
 		E8923DA0116AB2820071B552 /* objc-block-trampolines.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = "objc-block-trampolines.mm"; path = "runtime/objc-block-trampolines.mm"; sourceTree = "<group>"; };
@@ -396,6 +405,12 @@
 				042D2E5225E1438700EBADF8 /* LGTeacher.m */,
 				045CC86425B57B0F00411B57 /* LGPerson.h */,
 				045CC86525B57B0F00411B57 /* LGPerson.m */,
+				E6D204F4269AF01C00F7EE23 /* LGPerson+Cate1.h */,
+				E6D204F5269AF01C00F7EE23 /* LGPerson+Cate1.m */,
+				E699042426A5817B004BF475 /* Base.h */,
+				E699042526A5817B004BF475 /* Base.m */,
+				E699041A26A58103004BF475 /* NSObject+Swizzle.h */,
+				E699041B26A58103004BF475 /* NSObject+Swizzle.m */,
 			);
 			path = KCObjcBuild;
 			sourceTree = "<group>";
@@ -879,7 +894,10 @@
 			files = (
 				0466411525A4991B002440A8 /* main.m in Sources */,
 				042D2E5325E1438700EBADF8 /* LGTeacher.m in Sources */,
+				E6D204F6269AF01C00F7EE23 /* LGPerson+Cate1.m in Sources */,
 				045CC86625B57B0F00411B57 /* LGPerson.m in Sources */,
+				E699042626A5817B004BF475 /* Base.m in Sources */,
+				E699041C26A58103004BF475 /* NSObject+Swizzle.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

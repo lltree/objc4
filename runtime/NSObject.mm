@@ -348,18 +348,21 @@ storeWeak(id *location, objc_object *newObj)
     // Order by lock address to prevent lock ordering problems. 
     // Retry if the old value changes underneath us.
  retry:
-    if (haveOld) {
+    if (haveOld) { //weak指针可能以前保存过弱引用对象
+        // 如果weak ptr之前弱引用过一个obj，则将这个obj所对应的SideTable取出，赋值给oldTable
         oldObj = *location;
         oldTable = &SideTables()[oldObj];
     } else {
         oldTable = nil;
     }
     if (haveNew) {
+        // 如果weak ptr要weak引用一个新的obj，则将该obj对应的SideTable取出，赋值给newTable
         newTable = &SideTables()[newObj];
     } else {
         newTable = nil;
     }
 
+    // 加锁操作，防止多线程中竞争冲突
     SideTable::lockTwo<haveOld, haveNew>(oldTable, newTable);
 
     if (haveOld  &&  *location != oldObj) {
@@ -374,9 +377,9 @@ storeWeak(id *location, objc_object *newObj)
         Class cls = newObj->getIsa();
         if (cls != previouslyInitializedClass  &&  
             !((objc_class *)cls)->isInitialized()) 
-        {
+        {  // 如果cls还没有初始化，先初始化，再尝试设置weak
             SideTable::unlockTwo<haveOld, haveNew>(oldTable, newTable);
-            class_initialize(cls, (id)newObj);
+            class_initialize(cls, (id)newObj);//先初始化
 
             // If this class is finished with +initialize then we're good.
             // If this class is still running +initialize on this thread 
@@ -392,28 +395,34 @@ storeWeak(id *location, objc_object *newObj)
 
     // Clean up old value, if any.
     if (haveOld) {
+        // 如果weak_ptr之前弱引用过别的对象oldObj，
+        // 则调用weak_unregister_no_lock，在oldObj的weak_entry_t中移除该weak_ptr地址
         weak_unregister_no_lock(&oldTable->weak_table, oldObj, location);
     }
 
     // Assign new value, if any.
-    if (haveNew) {
+    if (haveNew) {// 如果weak_ptr需要弱引用新的对象newObj
+        // (1) 调用weak_register_no_lock方法，将weak ptr的地址记录到newObj对应的weak_entry_t中
         newObj = (objc_object *)
             weak_register_no_lock(&newTable->weak_table, (id)newObj, location, 
                                   crashIfDeallocating ? CrashIfDeallocating : ReturnNilIfDeallocating);
         // weak_register_no_lock returns nil if weak store should be rejected
 
-        // Set is-weakly-referenced bit in refcount table.
+        // Set is-weakly-referenced bit in refcount table.\
+        // (2) 更新newObj的isa的weakly_referenced bit标志位
         if (!newObj->isTaggedPointerOrNil()) {
             newObj->setWeaklyReferenced_nolock();
         }
 
         // Do not set *location anywhere else. That would introduce a race.
+        //（3）*location 赋值，也就是将weak ptr直接指向了newObj。
+        // 可以看到，这里并没有将newObj的引用计数+1
         *location = (id)newObj;
     }
     else {
         // No new value. The storage is not changed.
     }
-    
+    // 解锁，其他线程可以访问oldTable, newTable了
     SideTable::unlockTwo<haveOld, haveNew>(oldTable, newTable);
 
     // This must be called without the locks held, as it can invoke
@@ -918,7 +927,7 @@ private:
             AutoreleasePoolPage *page = hotPage();
 
             // fixme I think this `while` can be `if`, but I can't prove it
-            while (page->empty()) {
+            while (page->empty()) { //为空了， 则指向父表
                 page = page->parent;
                 setHotPage(page);
             }
@@ -1037,7 +1046,7 @@ private:
     static inline AutoreleasePoolPage *hotPage() 
     {
         AutoreleasePoolPage *result = (AutoreleasePoolPage *)
-            tls_get_direct(key);
+            tls_get_direct(key);//从局部线程缓存中获取AutoreleasePoolPage
         if ((id *)result == EMPTY_POOL_PLACEHOLDER) return nil;
         if (result) result->fastcheck();
         return result;
@@ -1926,15 +1935,16 @@ _objc_rootRelease(id obj)
 static ALWAYS_INLINE id
 callAlloc(Class cls, bool checkNil, bool allocWithZone=false)
 {
+    
 #if __OBJC2__
     if (slowpath(checkNil && !cls)) return nil;
-    if (fastpath(!cls->ISA()->hasCustomAWZ())) {
+    if (fastpath(!cls->ISA()->hasCustomAWZ())) { //没有自定义alloc copywithZone
         return _objc_rootAllocWithZone(cls, nil);
     }
 #endif
 
     // No shortcuts available.
-    if (allocWithZone) {
+    if (allocWithZone) {// allocWithZone 优先调用
         return ((id(*)(id, SEL, struct _NSZone *))objc_msgSend)(cls, @selector(allocWithZone:), nil);
     }
     return ((id(*)(id, SEL))objc_msgSend)(cls, @selector(alloc));
@@ -2259,8 +2269,10 @@ __attribute__((objc_nonlazy_class))
 - (BOOL)isMemberOfClass:(Class)cls {
     return [self class] == cls;
 }
-
+//如果是类 或者元类 则直接比较ISA是不是自己
 + (BOOL)isKindOfClass:(Class)cls {
+    //[[NSObject class] isKindOfClass:[NSObject class]]
+    //[NSObject class] 的 self->ISA(); 是根元类 有 跟类是 根元类的子类
     for (Class tcls = self->ISA(); tcls; tcls = tcls->getSuperclass()) {
         if (tcls == cls) return YES;
     }

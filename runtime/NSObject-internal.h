@@ -83,10 +83,10 @@
 #endif
 
 struct magic_t {
-	static const uint32_t M0 = 0xA1A1A1A1;
+	static const uint32_t M0 = 0xA1A1A1A1; //静态变量不在结构体内存中，在全局区
 #   define M1 "AUTORELEASE!"
 	static const size_t M1_len = 12;
-	uint32_t m[4]; 
+	uint32_t m[4];  //  4 * 4 = 16
 
 	magic_t() {
 		ASSERT(M1_len == strlen(M1));
